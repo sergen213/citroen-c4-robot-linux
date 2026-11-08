@@ -1,0 +1,101 @@
+{
+  "format": 1,
+  "component": "FFmpeg",
+  "version": "8.1.3",
+  "url": "https://ffmpeg.org/releases/ffmpeg-8.1.3.tar.xz",
+  "archive": "ffmpeg-8.1.3.tar.xz",
+  "top_directory": "ffmpeg-8.1.3",
+  "source_sha256": "7138d28c96d9d3e3af4ee3d8cad72741f8ffb40da90c1112235dea3ecd3178a3",
+  "source_size": 11732036,
+  "license": "LGPL-2.1-or-later",
+  "source_terms": "Unmodified official release; shared LGPL-2.1-or-later build, GPL/nonfree/version3 disabled. Redistribute complete byte-exact corresponding source archive, this recipe and lock alongside binaries; retain all original notices. End users must remain able to replace/relink the shared libraries. No original game assets or proprietary installers are included.",
+  "provenance": {
+    "type": "official-release-detached-pgp-signature",
+    "release_page": "https://ffmpeg.org/download.html",
+    "signature_url": "https://ffmpeg.org/releases/ffmpeg-8.1.3.tar.xz.asc",
+    "signature_sha256": "5f2880c7fea01f8694d30cb9d06362f77241ee67ce5926b157a226b18f08a538",
+    "key_url": "https://ffmpeg.org/ffmpeg-devel.asc",
+    "key_sha256": "397b3becedcd5a98769967ff1ff8501ddc89f8368b8f766e4701377d7dbaabe5",
+    "key_fingerprint": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
+    "signature_date": "2026-09-21",
+    "signature_unix_time": 1789951930,
+    "verification": "GnuPG GOODSIG and VALIDSIG matched the fingerprint published on the official release download page before source inspection; SHA-256 derived from the authenticated archive. No source execution during acquisition."
+  },
+  "configure_args": [
+    "--enable-shared",
+    "--disable-static",
+    "--enable-pic",
+    "--disable-autodetect",
+    "--disable-gpl",
+    "--disable-nonfree",
+    "--disable-version3",
+    "--disable-network",
+    "--disable-programs",
+    "--disable-doc",
+    "--disable-everything",
+    "--disable-avdevice",
+    "--disable-avfilter",
+    "--disable-swresample",
+    "--enable-avcodec",
+    "--enable-avformat",
+    "--enable-avutil",
+    "--enable-swscale",
+    "--enable-decoder=wmv3",
+    "--enable-demuxer=asf",
+    "--enable-protocol=file",
+    "--enable-x86asm",
+    "--enable-optimizations",
+    "--disable-debug",
+    "--arch=x86_64",
+    "--cpu=generic",
+    "--target-os=linux",
+    "--optflags=-O3",
+    "--extra-cflags=-march=x86-64 -mtune=generic"
+  ],
+  "decoder_dependency": "wmv3_decoder selects the internal vc1_decoder and DSP routines; ASF carries complete WMV3 packets, so no vc1 parser is enabled.",
+  "libraries": [
+    {
+      "name": "avcodec",
+      "version": "62.28.103",
+      "soname": "libavcodec.so.62"
+    },
+    {
+      "name": "avformat",
+      "version": "62.12.103",
+      "soname": "libavformat.so.62"
+    },
+    {
+      "name": "avutil",
+      "version": "60.26.103",
+      "soname": "libavutil.so.60"
+    },
+    {
+      "name": "swscale",
+      "version": "9.5.103",
+      "soname": "libswscale.so.9"
+    }
+  ],
+  "licenses": [
+    {
+      "path": "share/licenses/FFmpeg/COPYING.LGPLv2.1",
+      "sha256": "246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30"
+    },
+    {
+      "path": "share/licenses/FFmpeg/LICENSE.md",
+      "sha256": "2e1d16c72fd74e12063776371da757322f8b77589386532f4fd8634bde7de1af"
+    },
+    {
+      "path": "share/licenses/FFmpeg/CREDITS",
+      "sha256": "28ecc96d495fa5ad48c76739a8f8d2c8980548d7a171585a6eb3f27a9ac8e4a2"
+    },
+    {
+      "path": "share/licenses/FFmpeg/SOURCE-NOTICES.txt",
+      "sha256": "4b8bc545b44d6f54bad6ecb1a56350bf32bc85b7cc53ba102a3f24d108ce043c"
+    },
+    {
+      "path": "share/licenses/FFmpeg/LICENSE.txt",
+      "sha256": "0809306878ab4754a42d6ea87e536d255cae2fdcdc909ab724cfdadca997df25"
+    }
+  ],
+  "notice_scope": "Original COPYING.LGPLv2.1, LICENSE.md and CREDITS plus initial source notice comments from every C/header/assembly/build-source file in the four libraries, compat and ffbuild (includes disabled source components); complete notices are retained in the corresponding-source archive. LICENSE.txt concatenates these byte-exact generated inputs in listed order excluding itself."
+}

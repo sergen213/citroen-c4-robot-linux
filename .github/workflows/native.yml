@@ -1,0 +1,214 @@
+name: Native Linux
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_DATE_EPOCH: '0'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate release version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          if os.environ['REF_TYPE'] == 'tag':
+              tag = os.environ['REF_NAME']
+              pattern = r'v(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?'
+              match = re.fullmatch(pattern, tag)
+              if len(tag) > 129 or not match:
+                  raise SystemExit('Release tag must be bounded vSEMVER without build metadata')
+              for part in (match[4] or '').split('.'):
+                  if part.isdecimal() and ((len(part) > 1 and part[0] == '0') or int(part) > 18446744073709551615):
+                      raise SystemExit('Numeric prerelease identifier must be canonical uint64')
+              version = tag[1:]
+          else:
+              version = '0.1.0'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={version}\n')
+          PY
+      - name: Install native dependencies
+        run: |
+          test "$(uname -m)" = x86_64
+          sudo apt-get update
+          # Preserve Ubuntu's existing Signed-By/repository policy for source indices.
+          sudo python3 - <<'PY'
+          from pathlib import Path
+          for path in Path('/etc/apt/sources.list.d').glob('*.sources'):
+              lines = path.read_text().splitlines()
+              changed = False
+              for index, line in enumerate(lines):
+                  if line.startswith('Types:') and 'deb' in line.split()[1:] and 'deb-src' not in line.split()[1:]:
+                      lines[index] = line + ' deb-src'
+                      changed = True
+              if changed:
+                  path.write_text('\n'.join(lines) + '\n')
+          PY
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build pkg-config curl patchelf file desktop-file-utils nasm \
+            qt6-base-dev qt6-wayland libqt6opengl6-dev libvulkan-dev libgl1-mesa-dev glslc \
+            libssl-dev libarchive-dev libsndfile1-dev libglm-dev openssl \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxfixes-dev libxss-dev libwayland-dev libxkbcommon-dev libxkbcommon-x11-0 \
+            libasound2-dev libpulse-dev libudev-dev libxcb-cursor0
+          candidate="$(apt-cache policy libsdl3-dev | awk '$1 == "Candidate:" { print $2 }')"
+          if [[ -n "$candidate" && "$candidate" != '(none)' ]] && dpkg --compare-versions "$candidate" ge 3.2.0; then
+            sudo apt-get install -y libsdl3-dev
+          fi
+          if ! pkg-config --atleast-version=3.2.0 sdl3; then
+            curl --fail --location --retry 3 --output "$RUNNER_TEMP/SDL3-3.4.18.tar.gz" \
+              https://github.com/libsdl-org/SDL/releases/download/release-3.4.18/SDL3-3.4.18.tar.gz
+            # Digest: https://api.github.com/repos/libsdl-org/SDL/releases/tags/release-3.4.18
+            echo '9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3  '"$RUNNER_TEMP/SDL3-3.4.18.tar.gz" | sha256sum --check
+            tar -xzf "$RUNNER_TEMP/SDL3-3.4.18.tar.gz" -C "$RUNNER_TEMP"
+            cmake -S "$RUNNER_TEMP/SDL3-3.4.18" -B "$RUNNER_TEMP/sdl-build" -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/c4-prefix" \
+              -DCMAKE_INSTALL_LIBDIR=lib -DSDL_SHARED=ON -DSDL_STATIC=OFF \
+              -DSDL_TESTS=OFF -DSDL_TEST_LIBRARY=OFF -DSDL_EXAMPLES=OFF
+            cmake --build "$RUNNER_TEMP/sdl-build" --parallel 2
+            cmake --install "$RUNNER_TEMP/sdl-build"
+            mkdir -p "$RUNNER_TEMP/c4-prefix/share/licenses/SDL3"
+            cp "$RUNNER_TEMP/SDL3-3.4.18/LICENSE.txt" "$RUNNER_TEMP/c4-prefix/share/licenses/SDL3/LICENSE.txt"
+          fi
+      - name: Build pinned LGPL-only WMV3 decoder
+        run: |
+          python3 packaging/build_ffmpeg.py --prefix "$RUNNER_TEMP/c4-ffmpeg" \
+            --tools-dir "$RUNNER_TEMP/c4-tools"
+      - name: Build native targets
+        env:
+          NATIVE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          export PKG_CONFIG_PATH="$RUNNER_TEMP/c4-ffmpeg/lib/pkgconfig:$RUNNER_TEMP/c4-prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/c4-prefix;$RUNNER_TEMP/c4-ffmpeg" -DC4_VERSION="$NATIVE_VERSION" -DBUILD_TESTING=ON
+          cmake --build build --parallel 2
+      - name: Run native and packaging checks
+        run: |
+          python3 -m unittest discover -s tests
+          python3 packaging/tests/safety.py
+          python3 packaging/tests/ffmpeg_recipe.py \
+            --source-archive "$RUNNER_TEMP/c4-tools/ffmpeg-source/ffmpeg-8.1.3.tar.xz"
+          python3 packaging/tests/dbus_recipe.py
+          python3 packaging/tests/runtime_paths.py
+          python3 packaging/appimage/test_appimage.py
+          python3 packaging/appimage/test_source_bundle.py
+          ctest --test-dir build --output-on-failure
+      - name: Acquire deployed Ubuntu sources and sign native release and AppImage
+        if: github.ref_type == 'tag'
+        env:
+          ED25519_PRIVATE_KEY: ${{ secrets.ED25519_PRIVATE_KEY }}
+          NATIVE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$ED25519_PRIVATE_KEY" ]]; then
+            echo 'ED25519_PRIVATE_KEY is required for signed releases' >&2
+            exit 1
+          fi
+          umask 077
+          key_dir="$(mktemp -d "$RUNNER_TEMP/c4-release-key.XXXXXX")"
+          trap 'rm -rf -- "$key_dir"' EXIT
+          printf '%s\n' "$ED25519_PRIVATE_KEY" > "$key_dir/private.pem"
+          unset ED25519_PRIVATE_KEY
+          openssl pkey -in "$key_dir/private.pem" -passin pass: -pubout -out "$key_dir/public.pem"
+          export C4_FFMPEG_PREFIX="$RUNNER_TEMP/c4-ffmpeg"
+          export C4_RUNTIME_LIBRARY_PATH="$C4_FFMPEG_PREFIX/lib"
+          if [[ -d "$RUNNER_TEMP/c4-prefix/lib" ]]; then
+            export C4_RUNTIME_LIBRARY_PATH="$C4_RUNTIME_LIBRARY_PATH:$RUNNER_TEMP/c4-prefix/lib"
+            export C4_SDL_SOURCE_LICENSE="$RUNNER_TEMP/c4-prefix/share/licenses/SDL3/LICENSE.txt"
+          fi
+          python3 packaging/package_native.py --build-dir build --output dist \
+            --version "$NATIVE_VERSION" --signing-key "$key_dir/private.pem" --tools-dir "$RUNNER_TEMP/c4-tools"
+          python3 packaging/package_native.py --build-dir build --output dist-repro \
+            --version "$NATIVE_VERSION" --signing-key "$key_dir/private.pem" --tools-dir "$RUNNER_TEMP/c4-tools"
+          for artifact in \
+            manifest.json manifest.sig native-linux-x86_64.tar.gz \
+            "Citroen-C4-Robot-$NATIVE_VERSION-x86_64.AppImage" \
+            "Citroen-C4-Robot-$NATIVE_VERSION-x86_64.AppImage.sig" \
+            runtime-manifest.json runtime-corresponding-source.tar.gz \
+            runtime-corresponding-source.tar.gz.sig; do
+            cmp -- "dist/$artifact" "dist-repro/$artifact"
+          done
+          openssl pkeyutl -verify -pubin -inkey "$key_dir/public.pem" -rawin \
+            -in dist/manifest.json -sigfile dist/manifest.sig
+          image="dist/Citroen-C4-Robot-$NATIVE_VERSION-x86_64.AppImage"
+          openssl pkeyutl -verify -pubin -inkey "$key_dir/public.pem" -rawin \
+            -in "$image" -sigfile "$image.sig"
+          openssl pkeyutl -verify -pubin -inkey "$key_dir/public.pem" -rawin \
+            -in dist/runtime-corresponding-source.tar.gz -sigfile dist/runtime-corresponding-source.tar.gz.sig
+          # FUSE-free extraction also exercises the actual embedded static runtime.
+          (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/$image" --appimage-extract)
+          env -i PATH=/usr/bin:/bin HOME="$RUNNER_TEMP/c4-smoke-home" \
+            "$RUNNER_TEMP/squashfs-root/usr/bin/citroen-c4-robot" --diagnostics
+          mkdir "$RUNNER_TEMP/native-extract"
+          tar -xzf dist/native-linux-x86_64.tar.gz -C "$RUNNER_TEMP/native-extract"
+          env -i PATH=/usr/bin:/bin HOME="$RUNNER_TEMP/c4-smoke-home" \
+            "$RUNNER_TEMP/native-extract/runtime/bin/python3" -I \
+            "$RUNNER_TEMP/native-extract/share/citroen-c4-robot/tools/import_assets.py" --help
+          {
+            printf '## Release public key\n\nVerify this PEM independently before pinning it. The updater requires an operator-configured absolute trusted-key path and the actual owner/repository; never auto-import a key from a downloaded release.\n\n```text\n'
+            cat "$key_dir/public.pem"
+            printf '```\n'
+            printf '\n## Corresponding source\n\nDownload runtime-corresponding-source.tar.gz and its detached signature beside these binaries. dependencies/provenance.json binds exact deployed distro package/source identities, source archives, recipes and patches to the included runtime bill of materials; ffmpeg/ contains the pinned decoder source and build proof. If an explicitly controlled D-Bus prefix was used, dbus/ contains its authentic upstream source and owned recipe/configuration proof instead of an unrecovered distro recipe. Runtime static-source provenance limits remain in README.txt.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Store signed release artifacts
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-linux-x86_64
+          path: |
+            dist/manifest.json
+            dist/manifest.sig
+            dist/native-linux-x86_64.tar.gz
+            dist/*.AppImage
+            dist/*.AppImage.sig
+            dist/runtime-manifest.json
+            dist/runtime-corresponding-source.tar.gz
+            dist/runtime-corresponding-source.tar.gz.sig
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Retrieve signed release artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: native-linux-x86_64
+          path: dist
+      - name: Publish signed release atomically
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          flags=()
+          if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" \
+            dist/manifest.json dist/manifest.sig dist/native-linux-x86_64.tar.gz \
+            dist/*.AppImage dist/*.AppImage.sig dist/runtime-manifest.json \
+            dist/runtime-corresponding-source.tar.gz dist/runtime-corresponding-source.tar.gz.sig \
+            --repo "$RELEASE_REPOSITORY" --verify-tag --draft --title "$RELEASE_TAG" \
+            --notes 'Corresponding source for the deployed copyleft libraries is provided in runtime-corresponding-source.tar.gz alongside these binaries, with its detached signature. Start with README.txt and dependencies/provenance.json for exact source archives, distro recipes/patches, build instructions and deployed-library hash bindings. FFmpeg source/build proof is in ffmpeg/; explicitly controlled D-Bus source builds, when selected, have their own source/recipe/configuration proof in dbus/. The AppImage runtime source provenance qualifications remain explicit in README.txt. Verify the publisher public key independently; this is not a legal certification or a byte-identical rebuild claim.' \
+            --generate-notes "${flags[@]}"
+          gh release edit "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" --draft=false

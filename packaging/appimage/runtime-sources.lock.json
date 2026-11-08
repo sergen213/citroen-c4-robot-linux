@@ -1,0 +1,182 @@
+{
+  "format": 1,
+  "runtime": {
+    "commit": "8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa",
+    "binary_sha256": "156f4bdbde9c52d01814600013e0a273f0118dc2de98975f3c8c63427ec79074",
+    "source_url": "https://github.com/AppImage/type2-runtime/tree/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa",
+    "release_asset_url": "https://api.github.com/repos/AppImage/type2-runtime/releases/assets/596078161"
+  },
+  "source_scope": "Complete runtime source, exact libfuse and squashfuse archive pins plus runtime libfuse patch; complete upstream static-library source and dated Alpine packaging reference snapshots. Original musl/zstd/zlib/mimalloc binary APK revisions remain unknown; no reproduced release binary claim.",
+  "sources": [
+    {
+      "component": "runtime",
+      "name": "type2-runtime-8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa.tar.gz",
+      "url": "https://codeload.github.com/AppImage/type2-runtime/tar.gz/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa",
+      "commit": "8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa",
+      "top_directory": "type2-runtime-8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa",
+      "sha256": "c449eb42c2190820872631f5e22f8e15b1e985a36dc4a9e2de3585bb7536c785",
+      "size": 31061,
+      "provenance": {
+        "type": "https-commit-source-snapshot-derived-sha256",
+        "url": "https://codeload.github.com/AppImage/type2-runtime/tar.gz/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa",
+        "trust_scope": "SHA-256 computed from actual complete GitHub commit-snapshot archive acquired over HTTPS; content authenticity relies on upstream HTTPS/GitHub. No independent signature verification and no source execution."
+      },
+      "binary_revision_scope": "Complete upstream source at official runtime release commit; build toolchain and mutable Alpine package closure are not reproducibly pinned by upstream."
+    },
+    {
+      "component": "libfuse",
+      "name": "fuse-3.15.0.tar.xz",
+      "url": "https://api.github.com/repos/libfuse/libfuse/releases/assets/111992533",
+      "commit": "6d08472ea47db895748d5ca7d3daf032c3fefcf8",
+      "top_directory": "fuse-3.15.0",
+      "sha256": "70589cfd5e1cff7ccd6ac91c86c01be340b227285c5e200baa284e401eea2ca0",
+      "upstream_url": "https://github.com/libfuse/libfuse/releases/download/fuse-3.15.0/fuse-3.15.0.tar.xz",
+      "size": 4589124,
+      "provenance": {
+        "type": "runtime-build-script-source-sha256",
+        "url": "https://raw.githubusercontent.com/AppImage/type2-runtime/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa/scripts/common/install-dependencies.sh",
+        "trust_scope": "Archive SHA-256 enforced by the exact upstream runtime build script; verified during acquisition. HTTPS delivery, no detached-signature verification performed."
+      },
+      "binary_revision_scope": "Exact upstream runtime dependency source pin; libfuse also requires patches/libfuse/mount.c.diff from supplied runtime source."
+    },
+    {
+      "component": "squashfuse",
+      "name": "squashfuse-0.5.2.tar.gz",
+      "url": "https://codeload.github.com/vasi/squashfuse/tar.gz/refs/tags/0.5.2",
+      "commit": "775b4cc72ab47641637897f11ce0da15d5c1f115",
+      "top_directory": "squashfuse-0.5.2",
+      "sha256": "db0238c5981dabbd80ee09ae15387f390091668ca060a7bc38047912491443d3",
+      "upstream_url": "https://github.com/vasi/squashfuse/archive/0.5.2.tar.gz",
+      "size": 75404,
+      "provenance": {
+        "type": "runtime-build-script-source-sha256",
+        "url": "https://raw.githubusercontent.com/AppImage/type2-runtime/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa/scripts/common/install-dependencies.sh",
+        "trust_scope": "Archive SHA-256 enforced by the exact upstream runtime build script; verified during acquisition. HTTPS delivery, no detached-signature verification performed."
+      },
+      "binary_revision_scope": "Exact upstream runtime dependency source pin; libfuse also requires patches/libfuse/mount.c.diff from supplied runtime source."
+    },
+    {
+      "component": "musl",
+      "name": "musl-1.2.5.tar.gz",
+      "url": "https://musl.libc.org/releases/musl-1.2.5.tar.gz",
+      "commit": "0784374d561435f7c787a555aeab8ede699ed298",
+      "top_directory": "musl-1.2.5",
+      "sha512": "7bb7f7833923cd69c7a1a9b8a5f1784bfd5289663eb6061dcd43d583e45987df8a68a1be05d75cc1c88a3f5b610653d1a70f4a9cff4d8f7fd41ae73ee058c17c",
+      "sha256": "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4",
+      "size": 1080786,
+      "provenance": {
+        "type": "dated-alpine-recipe-sha512-and-derived-sha256",
+        "url": "https://raw.githubusercontent.com/alpinelinux/aports/b82a90a26fc0965ffd03cca90dfb1daed17101cc/main/musl/APKBUILD",
+        "trust_scope": "Official upstream release bytes over HTTPS, SHA-512 matched immutable dated Alpine recipe before deriving SHA-256. Exact original binary APK revision not proven."
+      },
+      "binary_revision_scope": "Upstream 1.2.5 source only; contemporaneous Alpine 1.2.5-r11 recipe and patches supplied in aports reference archive, not asserted to be the original binary revision."
+    },
+    {
+      "component": "zstd",
+      "name": "zstd-794ea1b0afca0f020f4e57b6732332231fb23c70.tar.gz",
+      "url": "https://codeload.github.com/facebook/zstd/tar.gz/794ea1b0afca0f020f4e57b6732332231fb23c70",
+      "commit": "794ea1b0afca0f020f4e57b6732332231fb23c70",
+      "top_directory": "zstd-794ea1b0afca0f020f4e57b6732332231fb23c70",
+      "sha256": "33eaa5611d330dbc037e32554521d4e4a8edf2358df7d9b74d586c510a4bcec6",
+      "size": 2426851,
+      "provenance": {
+        "type": "https-commit-source-snapshot-derived-sha256",
+        "url": "https://codeload.github.com/facebook/zstd/tar.gz/794ea1b0afca0f020f4e57b6732332231fb23c70",
+        "trust_scope": "SHA-256 computed from actual complete GitHub commit-snapshot archive acquired over HTTPS; content authenticity relies on upstream HTTPS/GitHub. No independent signature verification and no source execution.",
+        "dated_alpine_recipe_url": "https://raw.githubusercontent.com/alpinelinux/aports/b82a90a26fc0965ffd03cca90dfb1daed17101cc/main/zstd/APKBUILD"
+      },
+      "binary_revision_scope": "Contemporaneous upstream source snapshot and dated Alpine recipe/patch reference, not proof of exact original binary APK version or patch revision."
+    },
+    {
+      "component": "zlib",
+      "name": "zlib-da607da739fa6047df13e66a2af6b8bec7c2a498.tar.gz",
+      "url": "https://codeload.github.com/madler/zlib/tar.gz/da607da739fa6047df13e66a2af6b8bec7c2a498",
+      "commit": "da607da739fa6047df13e66a2af6b8bec7c2a498",
+      "top_directory": "zlib-da607da739fa6047df13e66a2af6b8bec7c2a498",
+      "sha256": "b9258cf6254e7f7c37f1cd61dba943a1c5ea3cff5718c789834dac359094f5f7",
+      "size": 1567269,
+      "provenance": {
+        "type": "https-commit-source-snapshot-derived-sha256",
+        "url": "https://codeload.github.com/madler/zlib/tar.gz/da607da739fa6047df13e66a2af6b8bec7c2a498",
+        "trust_scope": "SHA-256 computed from actual complete GitHub commit-snapshot archive acquired over HTTPS; content authenticity relies on upstream HTTPS/GitHub. No independent signature verification and no source execution.",
+        "dated_alpine_recipe_url": "https://raw.githubusercontent.com/alpinelinux/aports/b82a90a26fc0965ffd03cca90dfb1daed17101cc/main/zlib/APKBUILD"
+      },
+      "binary_revision_scope": "Contemporaneous upstream source snapshot and dated Alpine recipe/patch reference, not proof of exact original binary APK version or patch revision."
+    },
+    {
+      "component": "mimalloc",
+      "name": "mimalloc-8c532c32c3c96e5ba1f2283e032f69ead8add00f.tar.gz",
+      "url": "https://codeload.github.com/microsoft/mimalloc/tar.gz/8c532c32c3c96e5ba1f2283e032f69ead8add00f",
+      "commit": "8c532c32c3c96e5ba1f2283e032f69ead8add00f",
+      "top_directory": "mimalloc-8c532c32c3c96e5ba1f2283e032f69ead8add00f",
+      "sha256": "5b419de5ed9273f63b8537d26ff9d49549808224036f483589ed8524a56461f7",
+      "size": 1181457,
+      "provenance": {
+        "type": "https-commit-source-snapshot-derived-sha256",
+        "url": "https://codeload.github.com/microsoft/mimalloc/tar.gz/8c532c32c3c96e5ba1f2283e032f69ead8add00f",
+        "trust_scope": "SHA-256 computed from actual complete GitHub commit-snapshot archive acquired over HTTPS; content authenticity relies on upstream HTTPS/GitHub. No independent signature verification and no source execution.",
+        "dated_alpine_recipe_url": "https://raw.githubusercontent.com/alpinelinux/aports/b82a90a26fc0965ffd03cca90dfb1daed17101cc/community/mimalloc2/APKBUILD"
+      },
+      "binary_revision_scope": "Contemporaneous upstream source snapshot and dated Alpine recipe/patch reference, not proof of exact original binary APK version or patch revision."
+    },
+    {
+      "component": "alpine-aports-reference",
+      "name": "aports-b82a90a26fc0965ffd03cca90dfb1daed17101cc.tar.gz",
+      "url": "https://codeload.github.com/alpinelinux/aports/tar.gz/b82a90a26fc0965ffd03cca90dfb1daed17101cc",
+      "commit": "b82a90a26fc0965ffd03cca90dfb1daed17101cc",
+      "top_directory": "aports-b82a90a26fc0965ffd03cca90dfb1daed17101cc",
+      "sha256": "2ecefac7515b9bafa84f0f37cd1fc243bc3a48a8f00d91b25ce502c702a4c4e3",
+      "size": 13638070,
+      "provenance": {
+        "type": "https-commit-source-snapshot-derived-sha256",
+        "url": "https://codeload.github.com/alpinelinux/aports/tar.gz/b82a90a26fc0965ffd03cca90dfb1daed17101cc",
+        "trust_scope": "SHA-256 computed from actual complete GitHub commit-snapshot archive acquired over HTTPS; content authenticity relies on upstream HTTPS/GitHub. No independent signature verification and no source execution."
+      },
+      "binary_revision_scope": "Complete immutable dated Alpine packaging repository snapshot; reference recipes/patches, not proof of original installed APK revisions."
+    }
+  ],
+  "notices": [
+    {
+      "path": "runtime-LICENSE.txt",
+      "sha256": "aa154fc9070614bbe7921f89db11efd1dba7a1f3a41685958110e2230f9c0ca1",
+      "url": "https://raw.githubusercontent.com/AppImage/type2-runtime/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa/LICENSE",
+      "version": "8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa"
+    },
+    {
+      "path": "runtime-libfuse-LICENSE.txt",
+      "sha256": "dc626520dcd53a22f727af3ee42c770e56c97a64fe3adb063799d8ab032fe551",
+      "url": "https://raw.githubusercontent.com/libfuse/libfuse/6d08472ea47db895748d5ca7d3daf032c3fefcf8/LGPL2.txt",
+      "version": "libfuse-3.15.0"
+    },
+    {
+      "path": "runtime-squashfuse-LICENSE.txt",
+      "sha256": "9e909cc8a8ba27b1a649c964cf9eda37de911f3138c2b64e6d2f01703904ac13",
+      "url": "https://raw.githubusercontent.com/vasi/squashfuse/775b4cc72ab47641637897f11ce0da15d5c1f115/LICENSE",
+      "version": "squashfuse-0.5.2"
+    },
+    {
+      "path": "runtime-musl-LICENSE.txt",
+      "sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
+      "url": "https://git.musl-libc.org/cgit/musl/plain/COPYRIGHT?id=0784374d561435f7c787a555aeab8ede699ed298",
+      "version": "musl-1.2.5-notice-snapshot"
+    },
+    {
+      "path": "runtime-zstd-LICENSE.txt",
+      "sha256": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8",
+      "url": "https://raw.githubusercontent.com/facebook/zstd/794ea1b0afca0f020f4e57b6732332231fb23c70/LICENSE",
+      "version": "zstd-1.5.6-notice-snapshot"
+    },
+    {
+      "path": "runtime-zlib-LICENSE.txt",
+      "sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2",
+      "url": "https://raw.githubusercontent.com/madler/zlib/da607da739fa6047df13e66a2af6b8bec7c2a498/LICENSE",
+      "version": "zlib-1.3.2-notice-snapshot"
+    },
+    {
+      "path": "runtime-mimalloc-LICENSE.txt",
+      "sha256": "19c99805e7a44a34b297a75d1edea9985e300066dfc024d5c99d4236d4573b5d",
+      "url": "https://raw.githubusercontent.com/microsoft/mimalloc/8c532c32c3c96e5ba1f2283e032f69ead8add00f/LICENSE",
+      "version": "mimalloc-2.1.7-notice-snapshot"
+    }
+  ]
+}

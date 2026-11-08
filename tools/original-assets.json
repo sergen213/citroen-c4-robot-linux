@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "reference": {
+    "installer_sha256": "28aad6600d2eb7c7db2fe9dc7bc391ff28c20b6fed01813cbb41e75aeb009abc",
+    "inno_data_version": "5.1.2"
+  },
+  "files": [
+    {
+      "path": "app/C4 Robot Yardım.htm",
+      "size": 42521,
+      "sha256": "d68b52781678868f0a978edfa406b11ffccca11e19788a88e28df0016d32a667"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/1.png",
+      "size": 96062,
+      "sha256": "d333d9cf569c70d33be7fc535c1c429be9de89321191b9b966db80e02271c04a"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/10000.bmp",
+      "size": 921656,
+      "sha256": "38c1b9c3a9c6d74b8014fca5844743caf83b10238c2e6eaf069eefb33ea2284a"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/20000.bmp",
+      "size": 921656,
+      "sha256": "00ebc000879de1c18c1df35dcf0e3ff7c3046eb1fe9c5b7568f434827f3782e3"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/30000_.bmp",
+      "size": 921656,
+      "sha256": "918c1935f4356008105749c24edd792f5734406aaaf81548a9b40450b8a70d40"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/c4_robot_title.png",
+      "size": 26745,
+      "sha256": "f9316494fcb5d706f899a60b396a5d217b609151bdf6fd5133fa49b3af1a4fa7"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/el__freni.png",
+      "size": 634989,
+      "sha256": "8d5c383f5329515b4e5f6244b7f16f8662fc211d00a3cfce3ebd02047154885b"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/fren.png",
+      "size": 379374,
+      "sha256": "6ba56939bad6310c49245e0a95d22ef979b350ca4ba5c521e6cd896422372547"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/giris_menusu.bmp",
+      "size": 921656,
+      "sha256": "092cfe7f35561b23e63a250024c6b6baa8c897840333ad5a7fac72b5109b85cd"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/giris_menusu_ayarlar.bmp",
+      "size": 921656,
+      "sha256": "6988988ab1a6ab94f65541553266027a64f02645167d089c94dca6b2c2a4b56b"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/giris_menusu_ayarlar_detaylar.bmp",
+      "size": 921656,
+      "sha256": "df7b50c7804147cc2e0a3e688074fc512bda8324555fdeca5a38c5c3130ffa7e"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/ingame_screen.png",
+      "size": 443083,
+      "sha256": "abcb2b1f3dabcff5cb2985c91b9734f425937a74815f6500d35f3b1ee70b7b06"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/sag_sol.png",
+      "size": 365262,
+      "sha256": "d91c7d092cca65a99c1079fdd6bf7fccd729e3378797908efcb4a82568977338"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/transform_c4_to__robot.png",
+      "size": 529735,
+      "sha256": "7469925b8970fd23a4542f36cd0e910fc25006a099990d6ff64b568b135033db"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/transform_robot_to__c4.png",
+      "size": 527125,
+      "sha256": "9f52061a550ebf012c23d35ba80b1d86954af9a2edc1740e7e27efe1fab4667c"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/turbo.png",
+      "size": 208049,
+      "sha256": "b6dd8bdf57c30d869c7d6293f312d9fd6b923b153268921c2c609ea155a3b87c"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/yavasla.png",
+      "size": 464153,
+      "sha256": "f5b9f3efced02880174810593f881a3d04509b6a3d0d2407bddaa29f263ee14e"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/yonler.png",
+      "size": 404633,
+      "sha256": "1f29d5de283c79c0b3d7b541de7049bf56e850fd3a87f7e432df8c37b6edd2b9"
+    },
+    {
+      "path": "app/C4 Robot Yardım_files/zipla.png",
+      "size": 443286,
+      "sha256": "ae267097bc9c385155085cc5378694344d5176c964f591d3b359f31e6d3097b2"
+    },
+    {
+      "path": "app/C4.exe",
+      "size": 23552,
+      "sha256": "5e87d5a8204a1604efcec3dfe2d414c5107ccbd5be61be4bb96c852f55196749"
+    },
+    {
+      "path": "app/C4.wrs",
+      "size": 1006055,
+      "sha256": "41b4e7ea31853ab86ee6b6e4c8aa6e9ceb9dbfe204ddfb4ff6a5725da993f460"
+    },
+    {
+      "path": "app/C4_Robot.exe",
+      "size": 2480256,
+      "sha256": "e785b2cf648c444762111b351e3772291aeb6d1f0fe97c1fddc10456e10e0641"
+    },
+    {
+      "path": "app/PALETTE.RAW",
+      "size": 768,
+      "sha256": "fb9731faaecce5b1612462b84a5237695c6e577bbbf1e6a8a1e790b396fc8b87"
+    },
+    {
+      "path": "app/acknex.WDF",
+      "size": 201693,
+      "sha256": "608080b0314cce763da6c78d14af601f427f4b2cc254a166b9aab8af1866d20c"
+    },
+    {
+      "path": "app/acknex.dll",
+      "size": 2199552,
+      "sha256": "36ae2132740bd57b0e4f69ad761593a7319a4838615dffa7e1ec994829dbf060"
+    },
+    {
+      "path": "app/c4_1.dll",
+      "size": 49152,
+      "sha256": "1020dc1d031ab3efe375ea9b2bbdd0e40dbe40ddf0386dcf698f88ea81e3d78b"
+    },
+    {
+      "path": "app/c4_2.dll",
+      "size": 324096,
+      "sha256": "3115b82e4b6e15e093e420c15d1b447490cbbf0412f95a61197cc378658b19c9"
+    },
+    {
+      "path": "app/c4_3.dll",
+      "size": 81920,
+      "sha256": "9f5632a465f4042fa48ae87f714ccfc45f9ca29d0744561e22ab6e3913021819"
+    },
+    {
+      "path": "app/c4_4.dll",
+      "size": 270336,
+      "sha256": "3712906465939eb14adfae99c5024e740ac271eb5f4946ac26adb8d81b441e90"
+    },
+    {
+      "path": "app/d3dx9_30.dll",
+      "size": 2388176,
+      "sha256": "5edeed79f2359527a55b8189cfa8b9b121cd608d44eead905a0f3436938ad532"
+    },
+    {
+      "path": "app/dsw/OggDS0995.exe",
+      "size": 475844,
+      "sha256": "0482805e84f3b0ef9a64ba78ccbdb0a997c5510e10f9cc43b6db9a5effcaaf19"
+    },
+    {
+      "path": "app/dsw/acknex.dll",
+      "size": 2199552,
+      "sha256": "9b7b994b968d933373a4b7ea36355dbd85a56ea03ef6413176aeea714f913260"
+    },
+    {
+      "path": "app/dsw/acknex.wdf",
+      "size": 147,
+      "sha256": "ae451317f292ec4271fe39acea405ff2463ba13664fc307b6185c77798b261c7"
+    },
+    {
+      "path": "app/dsw/com_info.exe",
+      "size": 23552,
+      "sha256": "5e87d5a8204a1604efcec3dfe2d414c5107ccbd5be61be4bb96c852f55196749"
+    },
+    {
+      "path": "app/dsw/com_info.wrs",
+      "size": 418,
+      "sha256": "5b7a431e862f899683225fd01819f61f817df3cdab5360b37abaa33dbea7c818"
+    },
+    {
+      "path": "app/dsw/d3dx9_30.dll",
+      "size": 2388176,
+      "sha256": "5edeed79f2359527a55b8189cfa8b9b121cd608d44eead905a0f3436938ad532"
+    },
+    {
+      "path": "app/kaynak_atq0.rc4",
+      "size": 1081819,
+      "sha256": "3ccec3479a3d1bef8c716f1d833c73a12cebf138d1090a5ead1cc8c1c334974d"
+    },
+    {
+      "path": "app/kaynak_atq1.rc4",
+      "size": 3659068,
+      "sha256": "2ed46555ec764befd7e59429fd9777698437c93a7de9c49e399689548e3d7497"
+    },
+    {
+      "path": "app/kaynak_atq2.rc4",
+      "size": 10302664,
+      "sha256": "f7326fbd837c4e4a904b7be8aa45ff8484a98195422a74a5a5adbc3f60ffcf38"
+    },
+    {
+      "path": "app/kaynak_bit.rc4",
+      "size": 13609153,
+      "sha256": "4659067603b9886f3735e18d29c894f3705af6b9c4e215498079ff30b43b60c1"
+    },
+    {
+      "path": "app/kaynak_kap.rc4",
+      "size": 76891731,
+      "sha256": "ac38a12c9ed04c9268358915f476edec7917300d887d6a07575929bb845f51bb"
+    },
+    {
+      "path": "app/kaynak_mtq0.rc4",
+      "size": 13432194,
+      "sha256": "69d2895ce48b732a7214ec3b80feca3234fc60b37df3d82dea85ba2239610b0a"
+    },
+    {
+      "path": "app/kaynak_mtq1.rc4",
+      "size": 37948555,
+      "sha256": "4aeabba62e14b7d48931c619b4acd9b79f2203f0eb34e2a13b737005db7fc549"
+    },
+    {
+      "path": "app/kaynak_mtq2.rc4",
+      "size": 124133447,
+      "sha256": "19803a2ce1b8dc7bcf6770569f39663e60be95d42b73a181827596112e378215"
+    },
+    {
+      "path": "app/kaynak_snd.rc4",
+      "size": 8160695,
+      "sha256": "b27952681cbd16e44ba0fb16854d238903b330a04f4990947196d03798fb1aaa"
+    },
+    {
+      "path": "app/kaynak_stq1.rc4",
+      "size": 256441,
+      "sha256": "17ca3f2e070f898a41a4c07e3d786f829049814b703e71e71ef5a6e312865e67"
+    },
+    {
+      "path": "app/kaynak_stq2.rc4",
+      "size": 767968,
+      "sha256": "9b30f09cb02d31151551158e370827cf475b4fb1ddadeeb52ad67bfd23e1ffe7"
+    },
+    {
+      "path": "app/kaynak_stq3.rc4",
+      "size": 2694634,
+      "sha256": "fd9b83bd6a6bca29bddcec501851bc00030b9e23504359cb13d73a390e1ef52c"
+    },
+    {
+      "path": "app/menu_ses/buton_0.wav",
+      "size": 9122,
+      "sha256": "e470f4806edd320dc51638fb6c9c4f23d10ca9289d3d0519c7d972ce0545cbbe"
+    },
+    {
+      "path": "app/menu_ses/buton_1.wav",
+      "size": 62482,
+      "sha256": "9c79e1ac0b752910d2f19c1c1cbaa09b6200338c958a8a74fb78d26b267cdff8"
+    },
+    {
+      "path": "app/menu_ses/buton_hata.wav",
+      "size": 18908,
+      "sha256": "5ac0e422ea015c2ba915d8173f1d769b5e4009772a5004ca51bf24807fcddbff"
+    },
+    {
+      "path": "app/menu_ses/buton_ok.wav",
+      "size": 11540,
+      "sha256": "81e4aa412256e2f66d82b12202f74ed3699b24e91a76c00e3dc7aacf6f90fff4"
+    },
+    {
+      "path": "app/menu_ses/buz_coz.wav",
+      "size": 23172,
+      "sha256": "ae8513ecb3a84b4ef90fd3be70f888009fe5e2e9b903f531e4f87a69ac16bd52"
+    },
+    {
+      "path": "app/menu_ses/buz_don.wav",
+      "size": 17530,
+      "sha256": "3b3048d9a46e42b7ddb1ca8e569115707f455e77aa7a70c2751d1306ae058f08"
+    },
+    {
+      "path": "app/menu_ses/music.ogg",
+      "size": 1455340,
+      "sha256": "acb95c60ef87cb11bf1f803f9d19d8fa8572f1d5125b037274cbe49832d426f3"
+    },
+    {
+      "path": "app/rca0.rc4",
+      "size": 1280,
+      "sha256": "c3e4bcd22e4c3a216e0ce29c134509dd09d698cb76b09f36757f45c4354ed3f2"
+    },
+    {
+      "path": "app/rca1.rc4",
+      "size": 1280,
+      "sha256": "c95ff728269bc03c726a4a259a3093b3ed26ddeea8af85d58fc7401ed8a46146"
+    },
+    {
+      "path": "app/sh_ay.rc4",
+      "size": 62713,
+      "sha256": "495aadeceaf391ca5b66dc72d4732932175a6a8b80faf7507b16e28722830e03"
+    },
+    {
+      "path": "app/sh_btn.rc4",
+      "size": 174633,
+      "sha256": "6ca4381e36132c293ed331c9f60b09469c0b85c9e981b2d6046d7d1a9cc3ef75"
+    },
+    {
+      "path": "app/sh_cks.rc4",
+      "size": 1257,
+      "sha256": "1795c0f190d3d0dcf27d375d454ac4f3e926e053784df4283eb9973320a67fa0"
+    },
+    {
+      "path": "app/sh_dke.rc4",
+      "size": 789,
+      "sha256": "77fb829486c591510828cbf4c6f909fe8b4833f25334f699563c859d5c0cf762"
+    },
+    {
+      "path": "app/sh_exy.rc4",
+      "size": 84527,
+      "sha256": "00e50615c7ef1c00e0b8b252f528c112d5587550c8b77ecb1ce51528aa3f76c8"
+    },
+    {
+      "path": "app/sh_eyk.rc4",
+      "size": 344585,
+      "sha256": "1474094ddfe28972c1515fc4e77a82a4321c7f6a5f264fb128540773de22a0f5"
+    },
+    {
+      "path": "app/sh_gcs.rc4",
+      "size": 1481,
+      "sha256": "b8b84a23f90edc5c56fc3d62da96dff2a5bf974505477e8042c85cd88df06af8"
+    },
+    {
+      "path": "app/sh_kle.rc4",
+      "size": 19473,
+      "sha256": "7c2cabad04e19f00fdf06dcd26f23b5cad6ee53df4a16d066fe087816f0343fe"
+    },
+    {
+      "path": "app/sh_kle2.rc4",
+      "size": 16257,
+      "sha256": "b15213cfb1c4bf72b7261be9967989a9c35596d76fc1ca503081e186c8ffa908"
+    },
+    {
+      "path": "app/sh_par2.rc4",
+      "size": 7195,
+      "sha256": "c6ea9259cad204bc93612575dffed707bf4eaa28e17db969ab28ea264ae77ecc"
+    },
+    {
+      "path": "app/sh_vad.rc4",
+      "size": 38385,
+      "sha256": "ef78a6b1211353c0f3c32cac58dc25d1ef7341339704711c4a203f447ef8cecb"
+    },
+    {
+      "path": "app/sh_vdy.rc4",
+      "size": 147933,
+      "sha256": "ee0b87587edeb1d2431843d84178382582fd65d95472b6ed39e63b18f429ec1a"
+    },
+    {
+      "path": "app/sh_yky.rc4",
+      "size": 30051,
+      "sha256": "001c174474bfbe1cdd8694e76099d5f51c00715c828f5045834b8bb443d1b0d6"
+    },
+    {
+      "path": "app/sh_ylk.rc4",
+      "size": 5603,
+      "sha256": "d2e81de3950482720f536a566372d9e1ed4b5412557ea0883f6d74e3c2792c28"
+    },
+    {
+      "path": "app/sh_zga.rc4",
+      "size": 89673,
+      "sha256": "55139790aba026a6ac70e8bd09e74e23b61dc171ec6714c81781dbadbd449ecb"
+    },
+    {
+      "path": "app/video.wmv",
+      "size": 10692570,
+      "sha256": "2389e827a8aeab33195449a7da0e6e4759214fd6ae57f89a683046633985254f"
+    }
+  ]
+}

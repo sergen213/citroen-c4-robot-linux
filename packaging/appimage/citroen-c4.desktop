@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Citroen C4 Robot
+Exec=c4-launcher
+Icon=citroen-c4
+Categories=Game;
+Terminal=false

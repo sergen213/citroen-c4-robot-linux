@@ -1,0 +1,7 @@
+#pragma once
+
+namespace c4::rendering::quality {
+inline constexpr char post_shader[] = R"C4QUALITY(@C4_QUALITY_POST_SHADER@)C4QUALITY";
+inline constexpr char pbr_shader[] = R"C4QUALITY(@C4_QUALITY_PBR_SHADER@)C4QUALITY";
+inline constexpr char shadow_shader[] = R"C4QUALITY(@C4_QUALITY_SHADOW_SHADER@)C4QUALITY";
+} // namespace c4::rendering::quality

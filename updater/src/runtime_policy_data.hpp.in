@@ -1,0 +1,3 @@
+#pragma once
+// Build-time project policy, not a downloaded update artifact.
+inline constexpr char C4_RUNTIME_POLICY_JSON[] = R"C4_POLICY(@C4_RUNTIME_POLICY@)C4_POLICY";

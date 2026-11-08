@@ -1,0 +1,16 @@
+pkg_check_modules(SNDFILE REQUIRED IMPORTED_TARGET sndfile>=1.0.28)
+find_package(Threads REQUIRED)
+
+add_library(native_audio STATIC Audio.cpp AudioDiagnostics.cpp MotorAudio.cpp)
+target_include_directories(native_audio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_features(native_audio PUBLIC cxx_std_20)
+target_link_libraries(native_audio PUBLIC native_assets native_physics PRIVATE ${C4_SDL_TARGET} PkgConfig::SNDFILE Threads::Threads c4_warnings)
+
+if(BUILD_TESTING)
+    add_executable(native_audio_test AudioTest.cpp)
+    target_link_libraries(native_audio_test PRIVATE native_audio c4_warnings)
+    add_test(NAME native_audio_behavior COMMAND native_audio_test)
+    add_executable(native_motor_audio_test MotorAudioTest.cpp)
+    target_link_libraries(native_motor_audio_test PRIVATE native_audio c4_warnings)
+    add_test(NAME native_motor_audio_behavior COMMAND native_motor_audio_test)
+endif()

@@ -1,0 +1,22 @@
+add_library(native_physics STATIC Geometry.cpp NativeNumeric.cpp PhysicsWorld.cpp)
+target_include_directories(native_physics PUBLIC ${PROJECT_SOURCE_DIR}/src)
+target_compile_features(native_physics PUBLIC cxx_std_20)
+target_link_libraries(native_physics PUBLIC native_assets PRIVATE c4_warnings)
+# Recovered x87 caller pipelines round products/additions separately, never as FMA.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(native_physics PRIVATE -ffp-contract=off)
+endif()
+
+add_executable(c4-physics-query QueryDiagnostic.cpp)
+target_link_libraries(c4-physics-query PRIVATE native_physics c4_warnings)
+
+if(BUILD_TESTING)
+    add_executable(c4-physics-behavior PhysicsBehaviorTest.cpp)
+    target_link_libraries(c4-physics-behavior PRIVATE native_physics c4_warnings)
+    if(MSVC)
+        target_compile_options(c4-physics-behavior PRIVATE /UNDEBUG)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(c4-physics-behavior PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME native-physics-behavior COMMAND c4-physics-behavior)
+endif()

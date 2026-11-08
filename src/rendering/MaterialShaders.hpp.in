@@ -1,0 +1,8 @@
+#pragma once
+
+namespace c4::rendering {
+inline constexpr char normal_shader[] = R"C4GLSL(@C4_NORMAL_SHADER@)C4GLSL";
+inline constexpr char fixed_shader[] = R"C4GLSL(@C4_FIXED_SHADER@)C4GLSL";
+inline constexpr char bloom_shader[] = R"C4GLSL(@C4_BLOOM_SHADER@)C4GLSL";
+inline constexpr char source_lighting_shader[] = R"C4GLSL(@C4_SOURCE_LIGHTING_SHADER@)C4GLSL";
+} // namespace c4::rendering

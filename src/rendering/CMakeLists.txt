@@ -1,0 +1,28 @@
+add_library(native_materials STATIC Material.cpp MaterialEvents.cpp SourceLighting.cpp)
+target_include_directories(native_materials PUBLIC "${PROJECT_SOURCE_DIR}/src" "${CMAKE_CURRENT_BINARY_DIR}")
+target_link_libraries(native_materials PUBLIC native_physics native_game PRIVATE c4_warnings)
+
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    material_normal.glsl material_fixed.glsl material_bloom.glsl source_lighting.glsl)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/material_normal.glsl" C4_NORMAL_SHADER)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/material_fixed.glsl" C4_FIXED_SHADER)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/material_bloom.glsl" C4_BLOOM_SHADER)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/source_lighting.glsl" C4_SOURCE_LIGHTING_SHADER)
+configure_file(MaterialShaders.hpp.in MaterialShaders.hpp @ONLY)
+
+if(BUILD_TESTING)
+    add_executable(c4-material-test "${PROJECT_SOURCE_DIR}/tests/test_material_shader.cpp")
+    target_link_libraries(c4-material-test PRIVATE native_materials native_quality_gl c4_game_ui ${C4_SDL_TARGET} OpenGL::GL c4_warnings)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(c4-material-test PRIVATE -UNDEBUG)
+    endif()
+    find_program(C4_MATERIAL_XVFB_RUN NAMES xvfb-run)
+    if(C4_MATERIAL_XVFB_RUN)
+        add_test(NAME original-material-behavior COMMAND "${C4_MATERIAL_XVFB_RUN}" -a "$<TARGET_FILE:c4-material-test>")
+    else()
+        add_test(NAME original-material-behavior COMMAND c4-material-test)
+    endif()
+    set_tests_properties(original-material-behavior PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 30)
+endif()
+
+add_subdirectory(quality)

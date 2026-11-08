@@ -1,0 +1,336 @@
+#version 460
+#extension GL_EXT_ray_query : require
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_buffer_reference_uvec2 : require
+#extension GL_GOOGLE_include_directive : require
+#include "../../material_fixed.glsl"
+#include "../../material_normal.glsl"
+#include "../../quality/quality_pbr.glsl"
+
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(set = 0, binding = 0) uniform accelerationStructureEXT scene;
+layout(set = 0, binding = 1) uniform sampler2D baseColor;
+layout(set = 0, binding = 2) uniform sampler2D worldPosition;
+layout(set = 0, binding = 3) uniform sampler2D worldNormal;
+layout(set = 0, binding = 4, rgba16f) uniform writeonly image2D rawColor;
+struct InstanceData {
+    mat4 model; vec4 diffuse; uvec4 data; vec4 alphaPolicy;
+    vec4 skill1; vec4 skill5; uvec4 sourceTextures; vec4 materialAmbient;
+};
+struct MeshData {
+    uvec2 vertexAddress; uvec2 indexAddress; uvec4 data; uvec4 attributes;
+    uvec2 tangentAddress; uvec2 tangentPadding; uvec4 tangentData;
+};
+// MeshData stride 80: data={strideBytes,positionOffsetBytes,uvOffsetBytes,indexCount};
+// attributes={normalOffsetBytes,vertexCount,0,0}; tangentData={strideBytes,offsetBytes,0,0}.
+// InstanceData stride 176: alphaPolicy={sourceMode,sourceAlphaReference,alphaTechnique,diffuseAlpha}.
+// sourceMode: 0 opaque, 1 source GreaterEqual, 2 blended opaque alpha one, 3 blended opaque alpha zero.
+// Modes 2/3 give binary natural-opaque ray coverage, not translucent blending.
+// alphaTechnique: 0 entSkin1/UV0 fixed alpha (FixedFunction/EnvCubeMix/EnvCubeAlpha),
+// 1 original NormalOptim output alpha.
+// sourceTextures={normalTextureIndex,modulateDiffuseBool,0,cutoutBool};
+// cutoutBool applies source GreaterEqual independently of natural opacity.
+// materialAmbient is the original material vecAmbient, never scene/global ambient.
+layout(set = 0, binding = 5, std430) readonly buffer Instances { InstanceData instances[]; };
+layout(set = 0, binding = 6, std430) readonly buffer Meshes { MeshData meshes[]; };
+layout(set = 0, binding = 7) uniform sampler2D textures[];
+layout(set = 0, binding = 8, std430) buffer Counters {
+    uint reflection; uint shadow; uint gi; uint validPixels;
+    uint historyAccepted; uint historyRejected;
+} counters;
+layout(set = 0, binding = 9, std140) uniform SourceVisuals {
+    vec4 sunDirection; vec4 viewPosition;
+} sourceVisuals;
+// Receiver = {metallic, roughness, reflectivity, stable discrete material ID}.
+layout(set = 0, binding = 10) uniform sampler2D material_receiver;
+// Selected-SUN direct contribution uses the same encoding as baseColor.
+layout(set = 0, binding = 11) uniform sampler2D sun_direct;
+layout(set = 0, binding = 12) uniform samplerCube irradiance_environment;
+layout(set = 0, binding = 13) uniform samplerCube prefiltered_environment;
+layout(buffer_reference, std430, buffer_reference_align = 4) readonly buffer VertexFloats { float values[]; };
+layout(buffer_reference, std430, buffer_reference_align = 4) readonly buffer IndexWords { uint values[]; };
+layout(push_constant) uniform Push { vec4 camera; uvec4 config; vec4 environment; } pushData;
+// camera.w = numeric native optional flags (bit 0 HQ, bit 1 HDR).
+// config = {width, height, independent effect bits 1/2/4, frameIndex}.
+// environment = {prefiltered max LOD, prepared bool, 0, 0}; prepared cubes are linear.
+// sourceVisuals.sunDirection.w = known bool; xyz stays in original shader space.
+
+const float PI = 3.141592653589793;
+// Optional native modern effects, NOT reconstructed original PBR/light parameters:
+// sun cone = 0.015 radians; unknown-SUN direction uses the explicit approximation below.
+const float SUN_CONE = 0.015;
+const vec3 SUN_DIRECTION = vec3(-0.4, -0.3, 0.85) / length(vec3(-0.4, -0.3, 0.85));
+// Fixed artistic approximation: 30% unshadowed ambient, GI gain 0.15.
+const float AMBIENT = 0.30;
+const float GI_GAIN = 0.15;
+// Fallback native constant environment probe, not an original lighting reconstruction.
+// Used only for traversal misses when no authored irradiance/prefiltered cubes are prepared.
+const vec3 PROBE_RADIANCE = vec3(0.18, 0.24, 0.32);
+
+uint randomState;
+float randomFloat() {
+    randomState ^= randomState << 13;
+    randomState ^= randomState >> 17;
+    randomState ^= randomState << 5;
+    return float(randomState >> 8) * (1.0 / 16777216.0);
+}
+vec3 orientedDirection(vec3 normal, vec3 local) {
+    vec3 tangent = normalize(cross(abs(normal.z) < 0.999 ? vec3(0, 0, 1) : vec3(0, 1, 0), normal));
+    return normalize(tangent * local.x + cross(normal, tangent) * local.y + normal * local.z);
+}
+vec3 cosineHemisphere(vec3 normal) {
+    float radiusSquared = randomFloat();
+    float angle = 2.0 * PI * randomFloat();
+    return orientedDirection(normal, vec3(sqrt(radiusSquared) * cos(angle),
+        sqrt(radiusSquared) * sin(angle), sqrt(1.0 - radiusSquared)));
+}
+vec3 sunSample(vec3 sunDirection) {
+    float cosine = mix(1.0, cos(SUN_CONE), randomFloat());
+    float sine = sqrt(max(0.0, 1.0 - cosine * cosine));
+    float angle = 2.0 * PI * randomFloat();
+    return orientedDirection(sunDirection, vec3(sine * cos(angle), sine * sin(angle), cosine));
+}
+vec3 reflectionSample(vec3 normal, vec3 incoming, float roughness) {
+    float alpha = roughness * roughness;
+    float sampleValue = randomFloat();
+    float cosine = sqrt((1.0 - sampleValue) / (1.0 + (alpha * alpha - 1.0) * sampleValue));
+    float sine = sqrt(max(0.0, 1.0 - cosine * cosine));
+    float angle = 2.0 * PI * randomFloat();
+    vec3 halfVector = orientedDirection(normal, vec3(sine * cos(angle), sine * sin(angle), cosine));
+    vec3 direction = reflect(incoming, halfVector);
+    // A below-surface GGX sample uses the mirror direction, never a second ray.
+    return dot(direction, normal) > 0.0 ? normalize(direction) : normalize(reflect(incoming, normal));
+}
+vec3 vertexPosition(VertexFloats vertices, MeshData mesh, uint index) {
+    uint offset = (index * mesh.data.x + mesh.data.y) / 4u;
+    return vec3(vertices.values[offset], vertices.values[offset + 1u], vertices.values[offset + 2u]);
+}
+vec2 vertexUV(VertexFloats vertices, MeshData mesh, uint index) {
+    if (mesh.data.z == 0xffffffffu) return vec2(0.0);
+    uint offset = (index * mesh.data.x + mesh.data.z) / 4u;
+    return vec2(vertices.values[offset], vertices.values[offset + 1u]);
+}
+vec3 vertexNormal(VertexFloats vertices, MeshData mesh, uint index) {
+    uint offset = (index * mesh.data.x + mesh.attributes.x) / 4u;
+    return vec3(vertices.values[offset], vertices.values[offset + 1u], vertices.values[offset + 2u]);
+}
+vec3 vertexTangent(VertexFloats tangents, MeshData mesh, uint index) {
+    uint offset = (index * mesh.tangentData.x + mesh.tangentData.y) / 4u;
+    return vec3(tangents.values[offset], tangents.values[offset + 1u], tangents.values[offset + 2u]);
+}
+bool indexedUV(MeshData mesh, uint primitive, vec2 barycentric,
+               out uvec3 triangle, out vec3 weights, out vec2 uv) {
+    if (primitive >= mesh.data.w / 3u) return false;
+    IndexWords indices = IndexWords(mesh.indexAddress);
+    triangle = uvec3(indices.values[primitive * 3u], indices.values[primitive * 3u + 1u],
+                     indices.values[primitive * 3u + 2u]);
+    if (any(greaterThanEqual(triangle, uvec3(mesh.attributes.y)))) return false;
+    VertexFloats vertices = VertexFloats(mesh.vertexAddress);
+    weights = vec3(1.0 - barycentric.x - barycentric.y, barycentric.x, barycentric.y);
+    uv = vertexUV(vertices, mesh, triangle.x) * weights.x
+       + vertexUV(vertices, mesh, triangle.y) * weights.y
+       + vertexUV(vertices, mesh, triangle.z) * weights.z;
+    return true;
+}
+float normalOptimAlpha(InstanceData instance, MeshData mesh, uvec3 triangle,
+                       vec3 weights, vec2 uv, vec4 colorSample) {
+    VertexFloats vertices = VertexFloats(mesh.vertexAddress);
+    VertexFloats tangents = VertexFloats(mesh.tangentAddress);
+    // Recovered helper runs in original D3D local/world coordinates. Native
+    // positions/normals swap Y/Z back; cached tertiary-UV tangent xyz is already
+    // original-local and remains untouched (its fourth float is not handedness).
+    mat4 sourceWorld = mat4(instance.model[0].xzyw, instance.model[2].xzyw,
+                            instance.model[1].xzyw, instance.model[3].xzyw);
+    vec3 tangentView = vec3(0.0);
+    vec3 tangentSun = vec3(0.0);
+    for (int i = 0; i < 3; ++i) {
+        uint vertex = triangle[i];
+        vec4 unusedClip;
+        vec3 vertexView;
+        vec3 vertexSun;
+        c4_normal_vertex(sourceWorld, mat4(1.0),
+            vec4(vertexPosition(vertices, mesh, vertex).xzy, 1.0),
+            vertexNormal(vertices, mesh, vertex).xzy, vertexTangent(tangents, mesh, vertex),
+            // Producers already supply engine shader-space globals; skill5 is source-space.
+            sourceVisuals.viewPosition.xyz, sourceVisuals.sunDirection.xyz, instance.skill5.xyz,
+            unusedClip, vertexView, vertexSun);
+        // Original directions are normalized per vertex, not after interpolation.
+        tangentView += weights[i] * vertexView;
+        tangentSun += weights[i] * vertexSun;
+    }
+    vec4 normalSample = textureLod(textures[nonuniformEXT(instance.sourceTextures.x)], uv, 0.0);
+    return c4_normal_shade(colorSample, normalSample, tangentView, tangentSun,
+                           instance.materialAmbient, instance.skill1, 1.0).a;
+}
+bool alphaAccept(uint instanceIndex, uint primitive, vec2 barycentric) {
+    InstanceData instance = instances[instanceIndex];
+    if (instance.alphaPolicy.x == 0.0) return true;
+    uvec3 triangle;
+    vec3 weights;
+    vec2 uv;
+    MeshData mesh = meshes[instance.data.x];
+    if (!indexedUV(mesh, primitive, barycentric, triangle, weights, uv)) return false;
+    vec4 sampled = vec4(1.0);
+    if (instance.data.y != 0xffffffffu)
+        sampled = textureLod(textures[nonuniformEXT(instance.data.y)], uv, 0.0);
+    float alpha = instance.alphaPolicy.z == 1.0
+        ? normalOptimAlpha(instance, mesh, triangle, weights, uv, sampled)
+        : c4FixedTextureAlpha(sampled.a, instance.alphaPolicy.w, instance.sourceTextures.y != 0u);
+    if (instance.sourceTextures.w != 0u && alpha < instance.alphaPolicy.y) return false;
+    if (instance.alphaPolicy.x == 2.0) return alpha >= 1.0;
+    if (instance.alphaPolicy.x == 3.0) return alpha <= 0.0;
+    return instance.alphaPolicy.x == 1.0 && alpha >= instance.alphaPolicy.y;
+}
+struct Surface { vec3 color; vec3 normal; };
+bool traceSurface(vec3 origin, vec3 direction, float maximumDistance, out Surface hit) {
+    rayQueryEXT query;
+    // Force triangle candidates through explicit opaque confirmation; no face cull.
+    rayQueryInitializeEXT(query, scene, gl_RayFlagsNoOpaqueEXT, 0xff,
+        origin, 0.001, direction, maximumDistance);
+    while (rayQueryProceedEXT(query)) {
+        if (rayQueryGetIntersectionTypeEXT(query, false) == gl_RayQueryCandidateIntersectionTriangleEXT
+            && alphaAccept(rayQueryGetIntersectionInstanceCustomIndexEXT(query, false),
+                           rayQueryGetIntersectionPrimitiveIndexEXT(query, false),
+                           rayQueryGetIntersectionBarycentricsEXT(query, false)))
+            rayQueryConfirmIntersectionEXT(query);
+    }
+    if (rayQueryGetIntersectionTypeEXT(query, true) != gl_RayQueryCommittedIntersectionTriangleEXT)
+        return false;
+    uint instanceIndex = rayQueryGetIntersectionInstanceCustomIndexEXT(query, true);
+    InstanceData instance = instances[instanceIndex];
+    MeshData mesh = meshes[instance.data.x];
+    uint primitive = rayQueryGetIntersectionPrimitiveIndexEXT(query, true);
+    uvec3 triangle;
+    vec3 weights;
+    vec2 uv;
+    if (!indexedUV(mesh, primitive, rayQueryGetIntersectionBarycentricsEXT(query, true),
+                   triangle, weights, uv)) return false;
+    VertexFloats vertices = VertexFloats(mesh.vertexAddress);
+    hit.color = max(instance.diffuse.rgb, vec3(0.0));
+    if (instance.data.y != 0xffffffffu)
+        hit.color *= textureLod(textures[nonuniformEXT(instance.data.y)], uv, 0.0).rgb;
+    vec3 sourceNormal = vertexNormal(vertices, mesh, triangle.x) * weights.x
+                      + vertexNormal(vertices, mesh, triangle.y) * weights.y
+                      + vertexNormal(vertices, mesh, triangle.z) * weights.z;
+    mat3 linearModel = mat3(instance.model);
+    vec3 transformedNormal = vec3(0.0);
+    if (abs(determinant(linearModel)) > 1e-12 && dot(sourceNormal, sourceNormal) > 1e-12)
+        transformedNormal = transpose(inverse(linearModel)) * sourceNormal;
+    float normalLengthSquared = dot(transformedNormal, transformedNormal);
+    if (normalLengthSquared <= 1e-12 || any(isnan(transformedNormal)) || any(isinf(transformedNormal))) {
+        // Original zero normals or singular transforms retain their actual triangle geometry.
+        vec3 a = vertexPosition(vertices, mesh, triangle.x);
+        vec3 b = vertexPosition(vertices, mesh, triangle.y);
+        vec3 c = vertexPosition(vertices, mesh, triangle.z);
+        transformedNormal = cross(linearModel * (b - a), linearModel * (c - a));
+        normalLengthSquared = dot(transformedNormal, transformedNormal);
+    }
+    hit.normal = normalLengthSquared > 1e-12 ? transformedNormal * inversesqrt(normalLengthSquared) : -direction;
+    if (dot(hit.normal, direction) > 0.0) hit.normal = -hit.normal;
+    return true;
+}
+bool traceShadow(vec3 origin, vec3 direction) {
+    rayQueryEXT query;
+    rayQueryInitializeEXT(query, scene, gl_RayFlagsNoOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
+        0xff, origin, 0.001, direction, 10000.0);
+    while (rayQueryProceedEXT(query)) {
+        if (rayQueryGetIntersectionTypeEXT(query, false) == gl_RayQueryCandidateIntersectionTriangleEXT
+            && alphaAccept(rayQueryGetIntersectionInstanceCustomIndexEXT(query, false),
+                           rayQueryGetIntersectionPrimitiveIndexEXT(query, false),
+                           rayQueryGetIntersectionBarycentricsEXT(query, false)))
+            rayQueryConfirmIntersectionEXT(query);
+    }
+    return rayQueryGetIntersectionTypeEXT(query, true) == gl_RayQueryCommittedIntersectionTriangleEXT;
+}
+vec3 hitRadiance(Surface hit, vec3 sunDirection) {
+    vec3 radiance = hit.color * (AMBIENT + (1.0 - AMBIENT) * max(dot(hit.normal, sunDirection), 0.0));
+    // Match original UNORM clamping before the optional linear HDR decode.
+    // Candidate alpha and the recovered NormalOptim helper remain in original source encoding.
+    return (uint(pushData.camera.w) & 2u) != 0u
+        ? c4_quality_srgb_to_linear(clamp(radiance, vec3(0.0), vec3(1.0))) : radiance;
+}
+vec3 environmentRadiance(vec3 linearRadiance) {
+    if ((uint(pushData.camera.w) & 2u) != 0u) return linearRadiance;
+    vec3 value = max(linearRadiance, vec3(0.0));
+    return mix(1.055 * pow(value, vec3(1.0 / 2.4)) - 0.055, 12.92 * value,
+               lessThanEqual(value, vec3(0.0031308)));
+}
+void main() {
+    uvec2 coordinate = gl_GlobalInvocationID.xy;
+    if (any(greaterThanEqual(coordinate, pushData.config.xy))) return;
+    ivec2 pixel = ivec2(coordinate);
+    vec3 base = texelFetch(baseColor, pixel, 0).rgb;
+    vec4 position = texelFetch(worldPosition, pixel, 0);
+    vec3 normal = texelFetch(worldNormal, pixel, 0).xyz;
+    float normalLengthSquared = dot(normal, normal);
+    if (position.a <= 0.0 || any(isnan(position)) || any(isinf(position))
+        || any(isnan(normal)) || any(isinf(normal)) || normalLengthSquared < 1e-8) {
+        imageStore(rawColor, pixel, vec4(base, 1.0));
+        return;
+    }
+    atomicAdd(counters.validPixels, 1u);
+    normal *= inversesqrt(normalLengthSquared);
+    vec3 fromCamera = position.xyz - pushData.camera.xyz;
+    float cameraDistanceSquared = dot(fromCamera, fromCamera);
+    vec3 incoming = cameraDistanceSquared > 1e-8 ? fromCamera * inversesqrt(cameraDistanceSquared) : -normal;
+    if (dot(normal, incoming) > 0.0) normal = -normal;
+    float bias = max(0.002, sqrt(cameraDistanceSquared) * 0.00002);
+    vec3 origin = position.xyz + normal * bias;
+    randomState = (coordinate.x * 1973u + coordinate.y * 9277u + pushData.config.w * 26699u) ^ 0x68bc21ebu;
+    randomState |= 1u;
+    bool highQuality = (uint(pushData.camera.w) & 1u) != 0u;
+    vec4 receiver = texelFetch(material_receiver, pixel, 0);
+    float roughness = clamp(receiver.y, 0.04, 1.0);
+    float reflectivity = clamp(receiver.z, 0.0, 1.0);
+    vec3 sunDirection = sourceVisuals.sunDirection.w > 0.5
+        ? normalize(sourceVisuals.sunDirection.xyz.xzy) : SUN_DIRECTION;
+    // Native optional quality: bounded reflection/shadow/GI budgets are 2/4/2
+    // for HQ and 1/1/1 for baseline; disabled effects issue no queries.
+    vec3 color = base;
+    if ((pushData.config.z & 2u) != 0u) {
+        uint sampleCount = highQuality ? 4u : 1u;
+        float visibility = 0.0;
+        for (uint sampleIndex = 0u; sampleIndex < sampleCount; ++sampleIndex) {
+            vec3 direction = sunSample(sunDirection);
+            atomicAdd(counters.shadow, 1u);
+            bool blocked = traceShadow(origin, direction);
+            visibility += blocked && dot(normal, direction) > 0.0 ? 0.0 : 1.0;
+        }
+        color -= texelFetch(sun_direct, pixel, 0).rgb * (1.0 - visibility / float(sampleCount));
+    }
+    if ((pushData.config.z & 4u) != 0u) {
+        uint sampleCount = highQuality ? 2u : 1u;
+        vec3 radiance = vec3(0.0);
+        for (uint sampleIndex = 0u; sampleIndex < sampleCount; ++sampleIndex) {
+            vec3 direction = cosineHemisphere(normal);
+            Surface hit;
+            atomicAdd(counters.gi, 1u);
+            if (traceSurface(origin, direction, 10000.0, hit))
+                radiance += hitRadiance(hit, sunDirection);
+            else if (pushData.environment.y > 0.5)
+                radiance += environmentRadiance(textureLod(irradiance_environment, direction.xzy, 0.0).rgb);
+            else
+                radiance += PROBE_RADIANCE;
+        }
+        color += GI_GAIN * base * (radiance / float(sampleCount));
+    }
+    if ((pushData.config.z & 1u) != 0u && reflectivity > 0.0) {
+        uint sampleCount = highQuality ? 2u : 1u;
+        vec3 radiance = vec3(0.0);
+        for (uint sampleIndex = 0u; sampleIndex < sampleCount; ++sampleIndex) {
+            vec3 direction = reflectionSample(normal, incoming, roughness);
+            Surface hit;
+            atomicAdd(counters.reflection, 1u);
+            if (traceSurface(origin, direction, 10000.0, hit))
+                radiance += hitRadiance(hit, sunDirection);
+            else if (pushData.environment.y > 0.5)
+                radiance += environmentRadiance(textureLod(prefiltered_environment, direction.xzy,
+                    roughness * pushData.environment.x).rgb);
+            else
+                radiance += PROBE_RADIANCE;
+        }
+        color = mix(color, radiance / float(sampleCount), reflectivity);
+    }
+    imageStore(rawColor, pixel, vec4(color, 1.0));
+}

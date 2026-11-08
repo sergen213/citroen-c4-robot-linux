@@ -1,0 +1,13 @@
+// Finite authored full-binding replacements; masks select bits 1<<raw source selector.
+// WORLD_PROFILE_ACTION(atq_mask, mtq_mask, stq_mask, cgm_mask, shq_mask, bloom_mask, action, model, imported, texture, material, set, clear, unsupported)
+// Water false guard retains disk material; particle-zero fish retain their original model skins.
+WORLD_PROFILE_ACTION(7, 3, 15, 15, 1, 3, "water_yeni", "", "", "MTI_denz_tex", "", 0x00000000u, 0x00000000u, "")
+WORLD_PROFILE_ACTION(7, 3, 15, 1, 1, 1, "fish_m_shark2a", "", "", "", "Mtl_bal_kopek", 0x00000200u, 0x00000000u, "randomized runtime state; source transform overrides not represented by binding row; conditional runtime flags")
+WORLD_PROFILE_ACTION(7, 3, 15, 1, 1, 1, "fish_m_shark2b", "", "", "", "Mtl_bal_kopek", 0x00000200u, 0x00000000u, "runtime loops/motion; runtime animation; randomized runtime state; source transform overrides not represented by binding row; conditional runtime flags")
+WORLD_PROFILE_ACTION(7, 3, 15, 1, 1, 1, "fish_m_shark2c", "", "", "", "Mtl_bal_kopek", 0x00000200u, 0x00000000u, "randomized runtime state; source transform overrides not represented by binding row; conditional runtime flags")
+WORLD_PROFILE_ACTION(7, 3, 15, 1, 1, 1, "fish_m_sword1a", "", "", "", "Mtl_bal_kil", 0x00000200u, 0x00000000u, "randomized runtime state; source transform overrides not represented by binding row; conditional runtime flags")
+WORLD_PROFILE_ACTION(7, 3, 15, 1, 1, 1, "fish_m_sword1b", "", "", "", "Mtl_bal_kil", 0x00000200u, 0x00000000u, "runtime loops/motion; runtime animation; randomized runtime state; source transform overrides not represented by binding row; conditional runtime flags")
+WORLD_PROFILE_ACTION(7, 3, 15, 1, 1, 1, "fish_m_sword1c", "", "", "", "Mtl_bal_kil", 0x00000200u, 0x00000000u, "randomized runtime state; source transform overrides not represented by binding row; conditional runtime flags")
+WORLD_PROFILE_ACTION(7, 3, 15, 1, 1, 1, "fish_m_sword2a", "", "", "", "Mtl_bal_kil", 0x00000200u, 0x00000000u, "randomized runtime state; source transform overrides not represented by binding row; conditional runtime flags")
+WORLD_PROFILE_ACTION(7, 3, 15, 1, 1, 1, "fish_m_sword2b", "", "", "", "Mtl_bal_kil", 0x00000200u, 0x00000000u, "runtime loops/motion; runtime animation; randomized runtime state; source transform overrides not represented by binding row; conditional runtime flags")
+WORLD_PROFILE_ACTION(7, 3, 15, 1, 1, 1, "fish_m_sword2c", "", "", "", "Mtl_bal_kil", 0x00000200u, 0x00000000u, "randomized runtime state; source transform overrides not represented by binding row; conditional runtime flags")

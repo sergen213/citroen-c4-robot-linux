@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "library_bases": [
+    "Qt6Core", "Qt6Concurrent", "Qt6Gui", "Qt6Widgets", "Qt6Network", "Qt6DBus", "Qt6XcbQpa", "Qt6WaylandClient", "Qt6WaylandEglClientHwIntegration", "Qt6WaylandGlobal", "Qt6OpenGL",
+    "python3.11", "python3.12", "python3.13", "python3.14", "pulsecommon-16.1", "pulsecommon-17.0",
+    "avcodec", "avformat", "avutil", "swscale",
+    "vulkan",
+    "SDL3", "sndfile", "stdc++", "gcc_s", "archive", "ssl", "crypto", "ICE", "SM", "X11-xcb", "X11", "Xau", "Xdmcp", "Xrandr", "Xcursor", "Xi", "Xfixes", "Xext", "Xss", "Xrender", "asound", "pulse-simple", "pulse", "asyncns", "cap", "json-c", "wrap", "acl", "attr", "b2", "blkid", "brotlicommon", "brotlidec", "brotlienc", "bz2", "com_err", "curl", "dbus-1", "double-conversion", "duktape", "expat", "ffi", "fontconfig", "freetype", "gio-2.0", "glib-2.0", "gmodule-2.0", "gobject-2.0", "gomp", "graphite2", "gssapi_krb5", "harfbuzz", "icudata", "icui18n", "icuuc", "idn2", "k5crypto", "keyutils", "krb5", "krb5support", "lz4", "lzma", "md4c", "mount", "mp3lame", "mpg123", "nghttp2", "nghttp3", "ngtcp2", "ngtcp2_crypto_ossl", "ogg", "opus", "pcre", "pcre2-16", "pcre2-8", "png16", "proxy", "psl", "pxbackend-1.0", "ssh2", "systemd", "unistring", "uring", "uuid", "vorbis", "vorbisenc", "wayland-client", "wayland-cursor", "wayland-egl", "xcb-cursor", "xcb-glx", "xcb-icccm", "xcb-image", "xcb-keysyms", "xcb-randr", "xcb-render-util", "xcb-render", "xcb-shape", "xcb-shm", "xcb-sync", "xcb-util", "xcb-xfixes", "xcb-xinput", "xcb-xkb", "xcb", "xkbcommon-x11", "xkbcommon", "xml2", "z", "zstd", "FLAC", "boost_filesystem", "boost_iostreams", "boost_system", "boost_program_options", "gcrypt", "gpg-error", "selinux", "pcre2-posix", "gnutls", "nettle", "hogweed", "tasn1", "sodium", "snappy", "lzo2", "deflate", "md", "bsd"
+  ],
+  "plugins": [
+    "plugins/tls/libqopensslbackend.so",
+    "plugins/wayland-graphics-integration-client/libqt-plugin-wayland-egl.so",
+    "plugins/wayland-shell-integration/libxdg-shell.so",
+    "plugins/wayland-decoration-client/libbradient.so",
+    "plugins/platforms/libqxcb.so",
+    "plugins/platforms/libqwayland-egl.so",
+    "plugins/platforms/libqwayland-generic.so",
+    "plugins/platforms/libqwayland.so",
+    "plugins/xcbglintegrations/libqxcb-egl-integration.so",
+    "plugins/xcbglintegrations/libqxcb-glx-integration.so"
+  ],
+  "python_modules": ["_bisect", "_blake2", "_bz2", "_ctypes", "_hashlib", "_json", "_lzma", "_posixsubprocess", "_random", "_struct", "_zstd", "_md5", "_sha1", "_sha2", "_sha256", "_sha3", "_sha512", "binascii", "fcntl", "grp", "math", "mmap", "select", "zlib"],
+  "python_minors": [11, 12, 13, 14],
+  "license_names": ["LICENSE.txt"]
+}

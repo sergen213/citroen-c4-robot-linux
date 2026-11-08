@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+if [ -z "${APPDIR:-}" ]; then
+    APPDIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+fi
+export QT_PLUGIN_PATH="$APPDIR/usr/plugins"
+unset QT_QPA_PLATFORM_PLUGIN_PATH
+exec "$APPDIR/usr/bin/c4-launcher" "$@"

@@ -1,0 +1,246 @@
+#version 460
+
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(set = 0, binding = 0) uniform sampler2D rawColor;
+layout(set = 0, binding = 1) uniform sampler2D worldPosition;
+layout(set = 0, binding = 2) uniform sampler2D worldNormal;
+layout(set = 0, binding = 3) uniform sampler2D previousHistoryColor;
+layout(set = 0, binding = 4) uniform sampler2D previousHistoryPosition;
+layout(set = 0, binding = 5) uniform sampler2D previousHistoryNormal;
+layout(set = 0, binding = 6, rgba16f) uniform writeonly image2D outputHistoryColor;
+layout(set = 0, binding = 7, rgba32f) uniform writeonly image2D outputHistoryPosition;
+layout(set = 0, binding = 8, rgba16f) uniform writeonly image2D outputHistoryNormal;
+layout(set = 0, binding = 9) uniform sampler2D material_receiver;
+layout(set = 0, binding = 10) uniform sampler2D previousHistoryMaterial;
+layout(set = 0, binding = 11, rgba32f) uniform writeonly image2D outputHistoryMaterial;
+layout(set = 0, binding = 12, std430) buffer Counters {
+    uint reflectionRays;
+    uint shadowRays;
+    uint giRays;
+    uint validPixels;
+    uint historyAccepted;
+    uint historyRejected;
+} counters;
+shared uvec2 historyCounts[64];
+layout(push_constant) uniform Push { mat4 previousVP; uvec4 config; } pushData;
+// config = {width, height, flags, spatial step (1, 2, or 4)}.
+const uint HistoryValid = 1u;
+const uint HighDenoise = 2u;
+const uint SpatialOnly = 4u;
+const uint VarianceInput = 8u;
+const uint FinalOutput = 16u;
+
+bool validGeometry(vec4 position, vec3 normal) {
+    return position.a > 0.0 && !any(isnan(position)) && !any(isinf(position))
+        && !any(isnan(normal)) && !any(isinf(normal)) && dot(normal, normal) > 1e-8;
+}
+bool matchingMaterial(vec4 current, vec4 sampleMaterial) {
+    return !any(isnan(current)) && !any(isinf(current))
+        && !any(isnan(sampleMaterial)) && !any(isinf(sampleMaterial))
+        && current.w == sampleMaterial.w
+        && all(lessThanEqual(abs(current.xyz - sampleMaterial.xyz), vec3(1e-4)));
+}
+bool inImage(ivec2 pixel) {
+    return all(greaterThanEqual(pixel, ivec2(0))) && all(lessThan(pixel, ivec2(pushData.config.xy)));
+}
+float luminance(vec3 color) {
+    return dot(color, vec3(0.2126, 0.7152, 0.0722));
+}
+float spatialWeight(ivec2 samplePixel, ivec2 offset, vec4 position, vec3 normal,
+                    vec4 material, float sigma, float planeThreshold) {
+    if (!inImage(samplePixel)) return 0.0;
+    vec4 samplePosition = texelFetch(worldPosition, samplePixel, 0);
+    vec3 sampleNormal = texelFetch(worldNormal, samplePixel, 0).xyz;
+    if (!validGeometry(samplePosition, sampleNormal)) return 0.0;
+    if (!matchingMaterial(material, texelFetch(material_receiver, samplePixel, 0))) return 0.0;
+    float normalSimilarity = max(dot(normal, normalize(sampleNormal)), 0.0);
+    vec3 difference = samplePosition.xyz - position.xyz;
+    float distanceSquared = dot(difference, difference);
+    if (normalSimilarity < 0.9 || distanceSquared > 9.0 * sigma * sigma
+        || abs(dot(difference, normal)) > planeThreshold) return 0.0;
+    return exp(-0.5 * float(offset.x * offset.x + offset.y * offset.y))
+        * exp(-distanceSquared / (2.0 * sigma * sigma)) * pow(normalSimilarity, 32.0);
+}
+void filterPixel(out uvec2 temporalCounts) {
+    temporalCounts = uvec2(0u);
+    uvec2 coordinate = gl_GlobalInvocationID.xy;
+    if (any(greaterThanEqual(coordinate, pushData.config.xy))) return;
+    ivec2 pixel = ivec2(coordinate);
+    bool highQuality = (pushData.config.z & HighDenoise) != 0u;
+    bool spatialOnly = (pushData.config.z & SpatialOnly) != 0u;
+    bool varianceInput = (pushData.config.z & VarianceInput) != 0u;
+    bool finalOutput = !highQuality || (pushData.config.z & FinalOutput) != 0u;
+    int spatialStep = int(max(pushData.config.w, 1u));
+    vec4 currentSample = texelFetch(rawColor, pixel, 0);
+    vec3 current = currentSample.rgb;
+    vec4 position = texelFetch(worldPosition, pixel, 0);
+    vec3 normal = texelFetch(worldNormal, pixel, 0).xyz;
+    vec4 material = texelFetch(material_receiver, pixel, 0);
+    if (!validGeometry(position, normal)) {
+        float variance = varianceInput ? max(currentSample.a, 0.0) : 0.0;
+        imageStore(outputHistoryColor, pixel, vec4(current, finalOutput ? 1.0 : variance));
+        if (!spatialOnly) {
+            imageStore(outputHistoryPosition, pixel, vec4(0.0));
+            imageStore(outputHistoryNormal, pixel, vec4(0.0));
+            imageStore(outputHistoryMaterial, pixel, material);
+        }
+        return;
+    }
+    if (!spatialOnly) temporalCounts.y = 1u;
+    normal = normalize(normal);
+    int spatialRadius = highQuality ? 2 : 1;
+    float historyWeight = highQuality ? 0.9 : 0.8;
+
+    // Estimate world-space pixel footprint without derivatives in compute.
+    // The nearest same-facing neighbour avoids enlarging the kernel across depth edges.
+    float spacing = 1e20;
+    const ivec2 neighbours[4] = ivec2[4](ivec2(-1, 0), ivec2(1, 0), ivec2(0, -1), ivec2(0, 1));
+    for (int i = 0; i < 4; ++i) {
+        ivec2 neighbourPixel = pixel + neighbours[i];
+        if (!inImage(neighbourPixel)) continue;
+        vec4 neighbourPosition = texelFetch(worldPosition, neighbourPixel, 0);
+        vec3 neighbourNormal = texelFetch(worldNormal, neighbourPixel, 0).xyz;
+        if (!validGeometry(neighbourPosition, neighbourNormal)) continue;
+        if (!matchingMaterial(material, texelFetch(material_receiver, neighbourPixel, 0))) continue;
+        if (dot(normal, normalize(neighbourNormal)) < 0.9) continue;
+        float distanceToNeighbour = length(neighbourPosition.xyz - position.xyz);
+        if (distanceToNeighbour > 1e-6) spacing = min(spacing, distanceToNeighbour);
+    }
+    float sigma = spacing < 1e19 ? max(0.02, 2.0 * spacing) : 0.02;
+    float planeThreshold = max(0.01, 0.1 * sigma);
+    // Dilate spatial support, but retain the original plane gate at depth edges.
+    sigma *= float(spatialStep);
+    float currentLuminance = luminance(current);
+    float edgeVariance = varianceInput ? max(currentSample.a, 0.0) : 0.0;
+    if (highQuality && !varianceInput) {
+        // Pass zero estimates noise from accepted current-frame samples, not history alpha.
+        float luminanceSum = 0.0;
+        float luminanceSquaredSum = 0.0;
+        float varianceWeightSum = 0.0;
+        for (int y = -spatialRadius; y <= spatialRadius; ++y) {
+            for (int x = -spatialRadius; x <= spatialRadius; ++x) {
+                ivec2 offset = ivec2(x, y);
+                ivec2 samplePixel = pixel + offset * spatialStep;
+                float weight = spatialWeight(samplePixel, offset, position, normal, material, sigma, planeThreshold);
+                if (weight <= 0.0) continue;
+                float sampleLuminance = luminance(texelFetch(rawColor, samplePixel, 0).rgb);
+                luminanceSum += sampleLuminance * weight;
+                luminanceSquaredSum += sampleLuminance * sampleLuminance * weight;
+                varianceWeightSum += weight;
+            }
+        }
+        if (varianceWeightSum > 0.0) {
+            float mean = luminanceSum / varianceWeightSum;
+            edgeVariance = max(luminanceSquaredSum / varianceWeightSum - mean * mean, 0.0);
+        }
+    }
+    vec3 minimumColor = current;
+    vec3 maximumColor = current;
+    vec3 colorSum = vec3(0.0);
+    float weightSum = 0.0;
+    float luminanceSum = 0.0;
+    float luminanceSquaredSum = 0.0;
+    float propagatedVarianceSum = 0.0;
+    for (int y = -spatialRadius; y <= spatialRadius; ++y) {
+        for (int x = -spatialRadius; x <= spatialRadius; ++x) {
+            ivec2 offset = ivec2(x, y);
+            ivec2 samplePixel = pixel + offset * spatialStep;
+            float weight = spatialWeight(samplePixel, offset, position, normal, material, sigma, planeThreshold);
+            if (weight <= 0.0) continue;
+            vec4 sampleValue = texelFetch(rawColor, samplePixel, 0);
+            vec3 sampleColor = sampleValue.rgb;
+            if (highQuality) {
+                float sampleLuminance = luminance(sampleColor);
+                float sampleVariance = varianceInput ? max(sampleValue.a, 0.0) : edgeVariance;
+                float luminanceDifference = sampleLuminance - currentLuminance;
+                weight *= exp(-luminanceDifference * luminanceDifference
+                    / (4.0 * max(edgeVariance, sampleVariance) + 1e-5));
+                if (varianceInput) {
+                    propagatedVarianceSum += weight * weight * sampleVariance;
+                } else {
+                    luminanceSum += sampleLuminance * weight;
+                    luminanceSquaredSum += sampleLuminance * sampleLuminance * weight;
+                }
+            }
+            colorSum += sampleColor * weight;
+            weightSum += weight;
+            minimumColor = min(minimumColor, sampleColor);
+            maximumColor = max(maximumColor, sampleColor);
+        }
+    }
+    vec3 filtered = weightSum > 0.0 ? colorSum / weightSum : current;
+    float variance = edgeVariance;
+    if (highQuality && weightSum > 0.0) {
+        if (varianceInput) {
+            variance = propagatedVarianceSum / (weightSum * weightSum);
+        } else {
+            float mean = luminanceSum / weightSum;
+            variance = max(luminanceSquaredSum / weightSum - mean * mean, 0.0);
+        }
+    }
+
+    if (!spatialOnly && (pushData.config.z & HistoryValid) != 0u) {
+        vec4 clip = pushData.previousVP * vec4(position.xyz, 1.0);
+        if (clip.w > 1e-6 && !any(isnan(clip)) && !any(isinf(clip))) {
+            vec3 ndc = clip.xyz / clip.w;
+            // previousVP is OpenGL clip space; raster flips Y for the Vulkan viewport.
+            vec2 previousUV = vec2(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5);
+            if (all(greaterThanEqual(previousUV, vec2(0.0)))
+                && all(lessThan(previousUV, vec2(1.0))) && ndc.z >= -1.0 && ndc.z <= 1.0) {
+                ivec2 previousPixel = ivec2(previousUV * vec2(pushData.config.xy));
+                vec4 previousPosition = texelFetch(previousHistoryPosition, previousPixel, 0);
+                vec3 previousNormal = texelFetch(previousHistoryNormal, previousPixel, 0).xyz;
+                vec4 previousMaterial = texelFetch(previousHistoryMaterial, previousPixel, 0);
+                if (validGeometry(previousPosition, previousNormal) && matchingMaterial(material, previousMaterial)) {
+                    vec4 previousClip = pushData.previousVP * vec4(previousPosition.xyz, 1.0);
+                    float worldThreshold = max(0.02, min(sigma, 0.0015 * abs(clip.w) + 0.02));
+                    bool matches = previousClip.w > 1e-6
+                        && !any(isnan(previousClip)) && !any(isinf(previousClip))
+                        && abs(previousClip.z / previousClip.w - ndc.z) < 0.005
+                        && distance(previousPosition.xyz, position.xyz) < worldThreshold
+                        && dot(normal, normalize(previousNormal)) > 0.9;
+                    if (matches) {
+                        // Fetch color from the same validated geometry texel, not across a silhouette.
+                        vec3 history = texelFetch(previousHistoryColor, previousPixel, 0).rgb;
+                        if (!any(isnan(history)) && !any(isinf(history))) {
+                            history = clamp(history, minimumColor, maximumColor);
+                            vec3 blended = mix(filtered, history, historyWeight);
+                            if (!any(isnan(filtered)) && !any(isinf(filtered))
+                                && !any(isnan(history)) && !any(isinf(history))
+                                && !any(isnan(blended)) && !any(isinf(blended))) {
+                                filtered = blended;
+                                temporalCounts = uvec2(1u, 0u);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Only intermediate High passes carry variance; composed/history color alpha is one.
+    imageStore(outputHistoryColor, pixel, vec4(filtered, finalOutput ? 1.0 : variance));
+    if (!spatialOnly) {
+        imageStore(outputHistoryPosition, pixel, vec4(position.xyz, 1.0));
+        imageStore(outputHistoryNormal, pixel, vec4(normal, 1.0));
+        imageStore(outputHistoryMaterial, pixel, material);
+    }
+}
+
+void main() {
+    uvec2 temporalCounts;
+    filterPixel(temporalCounts);
+    if ((pushData.config.z & SpatialOnly) == 0u) {
+        // Even out-of-bounds and invalid lanes participate in every barrier.
+        uint lane = gl_LocalInvocationIndex;
+        historyCounts[lane] = temporalCounts;
+        barrier();
+        for (uint stride = 32u; stride > 0u; stride >>= 1u) {
+            if (lane < stride) historyCounts[lane] += historyCounts[lane + stride];
+            barrier();
+        }
+        if (lane == 0u) {
+            atomicAdd(counters.historyAccepted, historyCounts[0].x);
+            atomicAdd(counters.historyRejected, historyCounts[0].y);
+        }
+    }
+}

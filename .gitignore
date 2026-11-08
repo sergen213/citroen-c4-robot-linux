@@ -1,0 +1,30 @@
+# Original proprietary installer, extracted game data and analysis artifacts.
+/Goal
+/work/
+/original/
+/assets/
+/game-assets/
+*.exe
+*.dll
+*.wrs
+*.WDF
+*.rc4
+
+# Native build and release output; never package by copying the repository.
+/build/
+/build-*/
+/cmake-build-*/
+/dist/
+/stage/
+CMakeUserPresets.json
+compile_commands.json
+*.ppm
+
+# Local caches and secrets.
+__pycache__/
+*.py[cod]
+.cache/
+*.pem
+*.key
+.env
+!/packaging/release-public-ed25519.pem

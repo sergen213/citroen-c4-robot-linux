@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/assets">
+    <file alias="original-assets.json">../tools/original-assets.json</file>
+  </qresource>
+</RCC>
